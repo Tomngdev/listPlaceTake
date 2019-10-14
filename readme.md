@@ -17,6 +17,6 @@ and then run
 
 ----------------------
 
-This will creste the docker image locally and then you can access the app with 
+This will create the docker image locally and then you can access the app with 
 
 http://localhost:8080/
