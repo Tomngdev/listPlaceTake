@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql');
+const env = process.env;
 const mysqlConnectionPool = mysql.createPool({
   host: 'us-cdbr-iron-east-05.cleardb.net',
   user: 'b92a6b073d3b29',
@@ -15,29 +16,10 @@ const errorMsg = { "error" : "ERROR_DESCRIPTION" };
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  mysqlConnectionPool.getConnection(function(err, connection) {
-    if(err) { 
-      console.log(err); 
-      return; 
-    } else {
-      console.log("DB Connection successful");
-    }
-    var sql = "SELECT id, distance, status FROM lalalistplacetake";
-    connection.query(sql, [], function(err, results ) {
-      connection.release(); 
-      if(err) { 
-        console.log(err); 
-        return; 
-      }
-      console.log( results);
-    });
-  });
-
-  res.render('index', { title: 'Express' });
+  res.send('The app has started');
 });
 
 router.get('/orders', function(req, res, next) {
-  // /orders?page=:page&limit=:limit
   res.set('Content-Type', 'application/json');
   let page = 0;
   let limit = 0;
@@ -52,7 +34,7 @@ router.get('/orders', function(req, res, next) {
   
     mysqlConnectionPool.getConnection(function(err, connection) {
       if (err) { 
-        console.log(err); 
+        res.status(400).json({ "error": "ERROR_DESCRIPTION"});
         return; 
       } else {
         console.log("DB Connection successful");
@@ -71,10 +53,7 @@ router.get('/orders', function(req, res, next) {
   }
 });
 
-router.post('/orders',function(req,res, next) {
-  // create orders
-  // console.log("req body ->", req.body.origin[0]);
-  
+router.post('/orders',function(req,res, next) {  
   res.set('Content-Type', 'application/json');
 
   let distance = "default";
@@ -82,8 +61,6 @@ router.post('/orders',function(req,res, next) {
 
   setTimeout(() => {
     googleMapsClient.distanceMatrix({
-      // origins:'22.319371, 114.169359',
-      // destinations:'22.280600, 114.185057',
       origins: req.body.origin[0]+ ',' + req.body.origin[1],
       destinations: req.body.destination[0]+ ',' + req.body.destination[1],
       mode: "driving"
@@ -92,7 +69,7 @@ router.post('/orders',function(req,res, next) {
     .then((response) => {
       if (response.json.rows[0].elements[0].distance != undefined) {
         distance = response.json.rows[0].elements[0].distance.text;
-        console.log("distance ->", distance);
+        
         mysqlConnectionPool.getConnection(function(err, connection) {
           if (err) { 
             console.log(err); 
@@ -110,10 +87,7 @@ router.post('/orders',function(req,res, next) {
                 res.json(errorMsg);
                 return; 
               } else {
-      
                 let insertId = JSON.parse(JSON.stringify(results)).insertId;
-                console.log("insertId->", insertId);
-      
                 let selectSql = "SELECT id, distance, status FROM lalalistplacetake WHERE id = ?";
                 connection.query(selectSql, [ insertId ], function(err, results ) {
                   connection.release(); 
@@ -131,13 +105,11 @@ router.post('/orders',function(req,res, next) {
         });
 
       } else {
-        console.log("distance cant be found");
         res.json(errorMsg);
         return;
       }    
     })
     .catch((err) => {
-      console.log("google map error ->", err);
       res.json(errorMsg);
       return;
     })
@@ -147,10 +119,7 @@ router.post('/orders',function(req,res, next) {
 });
 
 router.patch('/orders/:id',function(req,res, next) {
-  // /orders/:id
 
-  // console.log("req param ->", req.params.id);
-  // console.log("req body ->", req.body.status);
   res.set('Content-Type', 'application/json');
   setTimeout(() => {
     mysqlConnectionPool.getConnection(function(err, connection) {
