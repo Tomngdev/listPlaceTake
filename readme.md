@@ -10,6 +10,9 @@ You need to have docker installed on your machine
 run:
 
 chmod +x start.sh
+
+and then run
+
 ./start.sh
 
 ----------------------
